@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#c82026" />
+  <title>3D-конструктор кухни — Славная мебель</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"><img src="./assets/brand/logo-white.png" alt="Логотип Славная мебель"></div>
+      <div>
+        <strong>СЛАВНАЯ МЕБЕЛЬ</strong>
+        <span>Конструктор модульной кухни · MVP 1.3</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="reset-view" class="btn btn-ghost">Показать всю комнату</button>
+      <button id="save-project" class="btn btn-ghost">Сохранить</button>
+      <button id="clear-project" class="btn btn-danger">Очистить</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="panel panel-left">
+      <div class="workspace-tabs" role="tablist" aria-label="Разделы конструктора">
+        <button class="workspace-tab active" data-mode="room" type="button">
+          <span class="workspace-icon">▦</span>
+          <span>Помещение</span>
+        </button>
+        <button class="workspace-tab" data-mode="modules" type="button">
+          <span class="workspace-icon">▤</span>
+          <span>Модули</span>
+        </button>
+      </div>
+
+      <div id="room-panel" class="workspace-panel active">
+        <div class="panel-title">Параметры помещения</div>
+        <div class="catalog-note">Задайте размеры числом или перетаскивайте стены прямо на плане.</div>
+
+        <div class="section section-first">
+          <div class="section-title">Размеры комнаты</div>
+          <div class="room-fields">
+            <label>Длина, мм<input id="room-width" type="number" value="3200" min="1800" max="8000" step="10"></label>
+            <label>Ширина, мм<input id="room-depth" type="number" value="3000" min="1800" max="8000" step="10"></label>
+            <label>Высота стен, мм<input id="room-height" type="number" value="2600" min="2200" max="4200" step="10"></label>
+          </div>
+          <button id="apply-room" class="btn btn-primary btn-full">Применить размеры</button>
+        </div>
+
+        <div class="help-card">
+          <b>Как изменить помещение</b>
+          <span>Перетащите левую/правую стену — изменится длина.</span>
+          <span>Перетащите верхнюю/нижнюю стену — изменится ширина.</span>
+          <span>Высота задаётся числом.</span>
+          <span>ПКМ по сетке — перемещение, колесо — приблизить/отдалить.</span>
+          <span>Размеры автоматически сохраняются для 3D.</span>
+        </div>
+      </div>
+
+      <div id="modules-panel" class="workspace-panel hidden">
+        <div class="panel-title">Каталог модулей</div>
+        <div class="catalog-note">Каталог разделён по реальным типам модулей из прайса.</div>
+        <div id="module-tabs" class="module-tabs"></div>
+        <div id="catalog" class="catalog"></div>
+
+        <div class="section">
+          <div class="section-title">Настройки выбранного модуля</div>
+          <div id="module-settings-empty" class="empty-state">Выберите модуль в 3D, чтобы изменить доступные параметры.</div>
+          <div id="module-settings" class="module-settings hidden">
+            <div class="module-settings-name" id="module-settings-name"></div>
+            <div class="module-color-setting">
+              <label>Цвет фасада</label>
+              <div id="swatches" class="swatches"></div>
+              <div id="material-name" class="material-name"></div>
+              <small>Новый модуль получает цвет последнего добавленного модуля.</small>
+            </div>
+            <div id="module-height-setting" class="selection-height hidden">
+              <label for="selection-height">Низ модуля от пола, мм</label>
+              <div class="selection-height-controls">
+                <input id="selection-height" type="number" min="800" max="3200" step="10">
+                <button id="apply-selection-height" class="btn btn-ghost" type="button">Применить</button>
+              </div>
+              <small>Высоту можно менять и мышью — перетаскивайте настенный модуль вверх/вниз по стене. Система не позволит выйти выше потолка.</small>
+            </div>
+            <div id="floor-module-note" class="module-rule-note hidden">Этот модуль устанавливается на пол, поэтому его высота фиксирована.</div>
+            <button id="delete-selected" class="btn btn-danger btn-full" type="button">Удалить модуль</button>
+          </div>
+        </div>
+
+        <div class="help-card">
+          <b>Как работать в 3D</b>
+          <span>ЛКМ по пустому месту — вращение камеры.</span>
+          <span>Колесо — масштаб.</span>
+          <span>Зажмите модуль и тяните — перенос к другой стене.</span>
+          <span>Модуль автоматически «прилипает» к стене и соседним модулям.</span>
+        </div>
+      </div>
+    </aside>
+
+    <section class="work-area">
+      <div id="room-2d" class="room-2d">
+        <div class="plan-toolbar">
+          <div>
+            <b>План помещения</b>
+            <span>Вид сверху · размеры в миллиметрах</span>
+          </div>
+          <button id="plan-fit" class="btn btn-ghost" type="button">Показать целиком</button>
+        </div>
+        <div id="plan-stage" class="plan-stage">
+          <svg id="room-plan-svg" class="room-plan-svg" viewBox="0 0 1000 700" aria-label="2D план помещения">
+            <defs>
+              <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#d9dde2" stroke-width="1" />
+              </pattern>
+              <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+                <rect width="100" height="100" fill="url(#smallGrid)" />
+                <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#c6ccd4" stroke-width="1.5" />
+              </pattern>
+              <pattern id="floorTexture2d" width="180" height="180" patternUnits="userSpaceOnUse">
+                <image href="./assets/textures/floor-laminate.jpg" x="0" y="0" width="180" height="180" preserveAspectRatio="xMidYMid slice" opacity="0.9" />
+              </pattern>
+            </defs>
+            <rect x="-10000" y="-10000" width="20000" height="20000" fill="url(#grid)" />
+            <g id="plan-room-group"></g>
+          </svg>
+        </div>
+        <div class="plan-legend">
+          <span><i class="legend-line"></i> Стена</span>
+          <span><i class="legend-handle"></i> ЛКМ — потянуть стену</span>
+          <span>ПКМ — двигаться по сетке · колесо — масштаб</span>
+          <span>Размеры задаются в мм · минимум 1800 · максимум 8000</span>
+        </div>
+      </div>
+
+      <section id="viewport" class="viewport hidden">
+        <div id="loading" class="loading">Загрузка 3D…</div>
+        <div class="viewport-badge">
+          <span id="room-label">Комната 3200 × 3000 × 2600 мм</span>
+          <span class="dot">•</span>
+          <span id="wall-label">Ближайшая стена скрывается автоматически</span>
+        </div>
+        <div id="drag-status" class="drag-status hidden">Положение допустимо</div>
+      </section>
+    </section>
+
+    <aside class="panel panel-right">
+      <div id="room-right-panel" class="context-panel">
+        <div class="panel-title">Помещение</div>
+        <div class="summary-card summary-card-room">
+          <div><span>Длина</span><strong id="room-summary-width">3200 мм</strong></div>
+          <div><span>Ширина</span><strong id="room-summary-depth">3000 мм</strong></div>
+          <div><span>Высота</span><strong id="room-summary-height">2600 мм</strong></div>
+        </div>
+        <div class="section">
+          <div class="section-title">Что настраиваем сейчас</div>
+          <div class="empty-state room-explainer">
+            На первом этапе помещение прямоугольное. Размеры можно менять числом или стенами на плане. Позже сюда добавим двери, окна и коммуникации.
+          </div>
+        </div>
+        <div class="lead-card">
+          <b>Следующий шаг</b>
+          <p>Перейдите во вкладку «Модули» — 3D-комната автоматически возьмёт размеры этого плана.</p>
+          <button id="go-modules" class="btn btn-primary btn-full" type="button">Перейти к модулям</button>
+        </div>
+      </div>
+
+      <div id="modules-right-panel" class="context-panel hidden">
+        <div class="panel-title">Проект</div>
+        <div class="summary-card">
+          <div><span>Модулей</span><strong id="module-count">0</strong></div>
+          <div><span>Предварительно</span><strong id="total-price">0 ₽</strong></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Характеристики выбранного модуля</div>
+          <div id="selection-empty" class="empty-state">Добавьте модуль из каталога или выберите его в 3D.</div>
+          <div id="selection" class="selection hidden">
+            <div class="selection-name" id="selection-name"></div>
+            <div class="selection-meta" id="selection-meta"></div>
+            <div class="selection-row"><span>Тип размещения</span><b id="selection-mount"></b></div>
+            <div class="selection-row selection-color-row"><span>Цвет фасада</span><b class="selection-color-value"><i id="selection-color-dot" class="selection-color-dot"></i><span id="selection-color-name"></span></b></div>
+            <div class="selection-row"><span>Стена</span><b id="selection-wall"></b></div>
+            <div class="selection-row"><span>Положение</span><b id="selection-offset"></b></div>
+            <div id="selection-elevation-row" class="selection-row hidden"><span>Низ от пола</span><b id="selection-elevation"></b></div>
+          </div>
+        </div>
+
+        <div class="section spec-section">
+          <div class="section-title">Смета</div>
+          <div id="spec" class="spec"><div class="empty-state">Смета пока пуста.</div></div>
+        </div>
+
+        <div class="lead-card">
+          <b>Следующий этап</b>
+          <p>После утверждения механики сюда добавим сохранение проекта по ссылке и отправку в Битрикс24.</p>
+          <button class="btn btn-primary btn-full" disabled>Получить расчёт</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite">
+    <div>
+      <b id="toast-title">Изменения применены</b>
+      <span id="toast-text">Размеры помещения обновлены.</span>
+    </div>
+    <button id="toast-close" type="button" aria-label="Закрыть уведомление">×</button>
+  </div>
+
+  <div id="webgl-error" class="error-overlay hidden">
+    <div><b>Не удалось запустить WebGL.</b><br>Откройте приложение в актуальном Chrome / Edge / Safari.</div>
+  </div>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
