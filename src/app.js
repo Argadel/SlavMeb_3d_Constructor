@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { CATALOG, FACADE_MATERIALS } from '../data/catalog.js';
+import { CATALOG, FACADE_MATERIALS, COUNTERTOP_MATERIALS } from '../data/catalog.js';
 
 const MM = 0.001;
 const fmt = new Intl.NumberFormat('ru-RU');
@@ -19,6 +19,8 @@ const MODULE_CATEGORIES = [
 const state = {
   room: { width: 3200, depth: 3000, height: 2600 },
   materialId: FACADE_MATERIALS[0].id, // fallback/default for first module
+  countertopMaterialId: COUNTERTOP_MATERIALS[0].id,
+  countertopThickness: 38,
   items: [],
   selectedId: null,
   nextId: 1,
@@ -46,6 +48,10 @@ let planView = null;
 let planCamera = null;
 let toastTimer = null;
 let floorTexture = null;
+let materialModalType = null;
+let materialModalCategory = 'all';
+let materialModalSearch = '';
+
 
 initUI();
 init2DPlan();
@@ -71,23 +77,39 @@ function initUI(){
   renderModuleTabs();
   renderCatalog();
 
-  const sw = document.getElementById('swatches');
-  FACADE_MATERIALS.forEach(mat => {
-    const b = document.createElement('button');
-    b.className = 'swatch';
-    b.title = mat.name;
-    b.style.background = mat.color;
-    b.onclick = () => {
-      const item=findItem(state.selectedId);
-      if(!item) return;
-      item.materialId = mat.id;
-      syncSelectedMaterialUI();
-      rebuildModules();
-      saveLocal();
-    };
-    sw.appendChild(b);
-  });
+  document.getElementById('facade-category').onchange = renderFacadeOptions;
+  document.getElementById('facade-select').onchange = () => {
+    const item=findItem(state.selectedId);
+    if(!item) return;
+    item.materialId=document.getElementById('facade-select').value;
+    state.materialId=item.materialId;
+    syncSelectedMaterialUI(); rebuildModules(); saveLocal();
+  };
+  document.getElementById('facade-open').onclick = () => openMaterialModal('facade');
+  document.getElementById('countertop-open').onclick = () => openMaterialModal('countertop');
+  document.getElementById('material-modal-close').onclick = closeMaterialModal;
+  document.querySelectorAll('[data-material-close]').forEach(el => el.onclick = closeMaterialModal);
+  document.getElementById('material-search').oninput = e => { materialModalSearch=e.target.value.trim().toLowerCase(); renderMaterialModal(); };
+  document.addEventListener('keydown', e => { if(e.key==='Escape' && !document.getElementById('material-modal').classList.contains('hidden')) closeMaterialModal(); });
+  document.getElementById('apply-facade-all').onclick = () => {
+    const item=findItem(state.selectedId); if(!item) return;
+    state.items.forEach(i=>i.materialId=item.materialId);
+    state.materialId=item.materialId; rebuildModules(); saveLocal(); syncSelectedMaterialUI();
+    showToast('Фасад применён','Выбранный декор установлен на все модули кухни.');
+  };
+  document.getElementById('countertop-thickness').onchange = () => {
+    state.countertopThickness=+document.getElementById('countertop-thickness').value;
+    renderCountertopOptions(true); rebuildModules(); saveLocal();
+  };
+  document.getElementById('countertop-category').onchange = () => renderCountertopOptions(false);
+  document.getElementById('countertop-select').onchange = () => {
+    state.countertopMaterialId=document.getElementById('countertop-select').value;
+    syncCountertopUI(); rebuildModules(); saveLocal();
+  };
+  renderFacadeOptions();
+  renderCountertopOptions(true);
   syncSelectedMaterialUI();
+  syncCountertopUI();
 
   const applyRoomFromFields = ({notify=true}={}) => {
     const w = clamp(+document.getElementById('room-width').value || 3200, 1800, 8000);
@@ -606,8 +628,38 @@ function commonModuleMaterials(materialId){
     inside:new THREE.MeshStandardMaterial({color:0xf0ede7,roughness:.82}),
     handle:new THREE.MeshStandardMaterial({color:0x343536,roughness:.42,metalness:.42}),
     plinth:new THREE.MeshStandardMaterial({color:0xc7c2bb,roughness:.8}),
-    top:new THREE.MeshStandardMaterial({color:0xc8b8a3,roughness:.58}),
+    top:createCountertopMaterial(state.countertopMaterialId),
     facade:createFacadeMaterial(materialId)
+  };
+}
+
+function getLowerWorktopSpan(item,m){
+  // Keep the small 9 mm side overhang only on exposed cabinet ends.
+  // When another floor module touches this module, both worktops stop exactly
+  // at the joint instead of overlapping in the same plane (z-fighting).
+  const W=m.width*MM;
+  const leftEdge=item.coord-W/2;
+  const rightEdge=item.coord+W/2;
+  const overhang=.009;
+  const tolerance=.012;
+  let leftBlocked=false,rightBlocked=false;
+
+  state.items.forEach(other=>{
+    if(other.uid===item.uid || other.wallId!==item.wallId) return;
+    const om=getModule(other.moduleId);
+    if(!om || om.wallMount==='wall') return;
+    const oHalf=om.width*MM/2;
+    const oLeft=other.coord-oHalf;
+    const oRight=other.coord+oHalf;
+    if(Math.abs(oRight-leftEdge)<=tolerance) leftBlocked=true;
+    if(Math.abs(oLeft-rightEdge)<=tolerance) rightBlocked=true;
+  });
+
+  const leftExt=leftBlocked?0:overhang;
+  const rightExt=rightBlocked?0:overhang;
+  return {
+    width:W+leftExt+rightExt,
+    offsetX:(rightExt-leftExt)/2
   };
 }
 
@@ -624,7 +676,8 @@ function buildLowerModule(item,m){
   const fh=m.facadeHeight*MM;
   const facade=addBox(g,W-.006,fh,.019,0,y0+fh/2-.003,D+.009,mat.facade,'facade');facade.userData.isFacade=true;
   addBox(g,Math.min(.32,W*.48),.018,.024,0,y0+fh-.055,D+.027,mat.handle,'handle');
-  addBox(g,W+.018,.038,.60,0,(m.height*MM)+.019,.30,mat.top,'worktop');
+  const worktopSpan=getLowerWorktopSpan(item,m);
+  addBox(g,worktopSpan.width,.038,.60,worktopSpan.offsetX,(m.height*MM)+.019,.30,mat.top,'worktop');
   applyWallTransform(g,item);
   tagModuleMeshes(g,item.uid);
   return g;
@@ -752,17 +805,152 @@ function tagModuleMeshes(g,uid){
 }
 function addBox(group,w,h,d,x,y,z,mat,part){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
-  mesh.position.set(x,y,z);mesh.userData.part=part;group.add(mesh);return mesh;
+  mesh.position.set(x,y,z);mesh.userData.part=part;
+  // Countertop decor must keep a believable real-world scale.
+  // Store the actual worktop footprint so the texture loader can calculate
+  // repeat values from the source image aspect ratio instead of squeezing
+  // or tiling the image a fixed 2.2 times on every module.
+  if(part==='worktop') configureCountertopTextureScale(mat,w,d);
+  if(part==='facade') configureFacadeTextureScale(mat,w,h);
+  group.add(mesh);return mesh;
 }
 
 function createFacadeMaterial(materialId){
   const def=FACADE_MATERIALS.find(m=>m.id===materialId)||FACADE_MATERIALS[0];
-  if(def.type==='wood'){
-    const tex=createWoodTexture(def.color);
-    return new THREE.MeshStandardMaterial({map:tex,color:0xffffff,roughness:def.roughness});
-  }
-  return new THREE.MeshStandardMaterial({color:new THREE.Color(def.color),roughness:def.roughness});
+  return createDecorMaterial(def,'facade');
 }
+
+function createCountertopMaterial(materialId){
+  const def=getCountertopMaterial(materialId);
+  return createDecorMaterial(def,'countertop');
+}
+
+function createDecorMaterial(def,usage){
+  const mat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:def.roughness ?? (usage==='countertop'?.5:.68)});
+  mat.userData.decorDef=def;
+  mat.userData.decorUsage=usage;
+  // Always start with a local procedural fallback so the constructor remains usable offline.
+  mat.map=getProceduralDecorTexture(def,usage);
+  mat.color.set(0xffffff);
+
+  // If the manufacturer exposes a real decor image, try to replace the fallback asynchronously.
+  // Cross-origin restrictions are handled gracefully: on error the procedural texture remains.
+  if(def?.texture && typeof THREE!=='undefined'){
+    try{
+      const loader=new THREE.TextureLoader();
+      if(loader.setCrossOrigin) loader.setCrossOrigin('anonymous');
+      loader.load(def.texture,(tex)=>{
+        tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+        applyDecorTextureScale(tex,mat,def,usage);
+        if('colorSpace' in tex && THREE.SRGBColorSpace){tex.colorSpace=THREE.SRGBColorSpace;}
+        else if(THREE.sRGBEncoding){tex.encoding=THREE.sRGBEncoding;}
+        if(renderer?.capabilities?.getMaxAnisotropy) tex.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
+        mat.map=tex;
+        mat.needsUpdate=true;
+      },undefined,()=>{});
+    }catch(e){}
+  }
+  return mat;
+}
+
+function configureCountertopTextureScale(mat,w,d){
+  if(!mat?.userData) return;
+  mat.userData.worktopFootprint={w,d};
+  if(mat.map){
+    applyDecorTextureScale(mat.map,mat,mat.userData.decorDef||{},'countertop');
+    mat.map.needsUpdate=true;
+  }
+}
+
+function configureFacadeTextureScale(mat,w,h){
+  if(!mat?.userData) return;
+  // Keep one physical decor scale across all fronts. Previously every door
+  // displayed the entire source image, so a 300 mm upper door squeezed the
+  // same amount of pattern into half the width of a 600 mm lower front.
+  mat.userData.facadeFootprint={w,h};
+  if(mat.map){
+    applyDecorTextureScale(mat.map,mat,mat.userData.decorDef||{},'facade');
+    mat.map.needsUpdate=true;
+  }
+}
+
+function applyDecorTextureScale(tex,mat,def,usage){
+  if(!tex) return;
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+  if(usage==='facade'){
+    const footprint=mat?.userData?.facadeFootprint;
+    // 0.545 m reproduces the already approved look of the ~600 mm lower front
+    // (the previous default was repeatX=1.1 there). Narrower doors now show a
+    // proportionally smaller crop instead of compressing the whole texture.
+    const physicalWidth=def.texturePhysicalWidth||.545;
+    const repeatX=footprint?Math.max(.08,footprint.w/physicalWidth):1.1;
+    tex.repeat.set(repeatX,1);
+    const off=def.facadeTextureOffset||[0,0];
+    tex.offset.set(off[0]||0,off[1]||0);
+    return;
+  }
+  if(usage!=='countertop'){
+    tex.repeat.set(1.1,1);
+    return;
+  }
+
+  const footprint=mat?.userData?.worktopFootprint;
+  if(!footprint){
+    // Temporary value used until the material is attached to a worktop mesh.
+    tex.repeat.set(.45,.60);
+    return;
+  }
+
+  // Treat the source decor as a large physical slab rather than a small tile.
+  // One source-image height corresponds to ~1 metre by default; width follows
+  // the real image aspect ratio. This preserves proportions and gives large,
+  // calm marble veins instead of several repeated mini-patterns per cabinet.
+  const image=tex.image;
+  const iw=image?.naturalWidth||image?.videoWidth||image?.width||0;
+  const ih=image?.naturalHeight||image?.videoHeight||image?.height||0;
+  const aspect=(iw>0&&ih>0)?iw/ih:(def.textureAspect||1.45);
+  const physicalHeight=def.texturePhysicalHeight||1.0;
+  const physicalWidth=physicalHeight*aspect;
+  const repeatX=Math.max(.08,footprint.w/physicalWidth);
+  const repeatY=Math.max(.08,footprint.d/physicalHeight);
+  tex.repeat.set(repeatX,repeatY);
+
+  const off=def.textureOffset||[0,0];
+  tex.offset.set(off[0]||0,off[1]||0);
+}
+
+function getProceduralDecorTexture(def,usage){
+  const c=document.createElement('canvas');c.width=256;c.height=256;
+  const x=c.getContext('2d');
+  x.fillStyle=def.color||'#aaa';x.fillRect(0,0,256,256);
+  const rgb=hexRgb(def.color||'#aaaaaa');
+  if(def.type==='wood' || def.category==='wood'){
+    for(let i=0;i<38;i++){
+      const y=(i*23+13)%256;
+      x.strokeStyle=`rgba(${Math.max(0,rgb[0]-35)},${Math.max(0,rgb[1]-30)},${Math.max(0,rgb[2]-25)},${.08+(i%4)*.025})`;
+      x.lineWidth=1+(i%3)*.45;x.beginPath();x.moveTo(0,y);
+      for(let xx=0;xx<=256;xx+=16)x.lineTo(xx,y+Math.sin((xx+i*11)/28)*5);
+      x.stroke();
+    }
+  }else if(['stone','industrial','dark','fantasy'].includes(def.type)||['stone','industrial','dark','fantasy'].includes(def.category)){
+    for(let i=0;i<36;i++){
+      x.fillStyle=`rgba(255,255,255,${.018+(i%5)*.008})`;
+      x.beginPath();x.arc((i*71)%256,(i*43)%256,3+(i%11),0,Math.PI*2);x.fill();
+    }
+    for(let i=0;i<12;i++){
+      x.strokeStyle=`rgba(40,40,40,${.025+(i%3)*.018})`;x.lineWidth=.8+(i%2);x.beginPath();
+      x.moveTo(-20,(i*31)%256);x.bezierCurveTo(70,(i*17)%256,180,(i*53)%256,280,(i*29)%256);x.stroke();
+    }
+  }
+  const tex=new THREE.CanvasTexture(c);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(usage==='countertop'?.6:1.1,usage==='countertop'?.6:1);
+  if('colorSpace' in tex && THREE.SRGBColorSpace){tex.colorSpace=THREE.SRGBColorSpace;}else if(THREE.sRGBEncoding){tex.encoding=THREE.sRGBEncoding;}
+  return tex;
+}
+
+function hexRgb(hex){
+  const h=hex.replace('#','');const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);return[(n>>16)&255,(n>>8)&255,n&255];
+}
+
 function createWoodTexture(base){
   const c=document.createElement('canvas');c.width=256;c.height=256;
   const ctx=c.getContext('2d');ctx.fillStyle=base;ctx.fillRect(0,0,256,256);
@@ -812,7 +1000,7 @@ function onPointerMove(e){
   const pFloor=new THREE.Vector3();
   const hasFloor=raycaster.ray.intersectPlane(floorPlane,pFloor);
   let wallId=item.wallId;
-  if(hasFloor) wallId=nearestWallForPoint(pFloor).id;
+  if(hasFloor) wallId=floorWallForPoint(pFloor,item.wallId);
   item.wallId=wallId;
 
   if(m.wallMount==='wall'){
@@ -895,13 +1083,30 @@ function intersectAvailableWallRay(preferredWallId){
   return null;
 }
 
-function nearestWallForPoint(p){
+function wallDistancesForPoint(p){
   const W=state.room.width*MM,D=state.room.depth*MM;
-  const list=[
+  return [
     {id:'north',dist:Math.abs(p.z+D/2)}, {id:'south',dist:Math.abs(p.z-D/2)},
     {id:'west',dist:Math.abs(p.x+W/2)}, {id:'east',dist:Math.abs(p.x-W/2)}
   ];
+}
+
+function nearestWallForPoint(p){
+  const list=wallDistancesForPoint(p);
   list.sort((a,b)=>a.dist-b.dist);return list[0];
+}
+
+function floorWallForPoint(p,currentWallId){
+  const list=wallDistancesForPoint(p).sort((a,b)=>a.dist-b.dist);
+  const nearest=list[0];
+  const current=list.find(w=>w.id===currentWallId);
+  // At a room corner the two wall distances are often almost identical.
+  // Keep the module on its current wall until the pointer is clearly closer
+  // to another wall. This prevents accidental wall switching that used to
+  // break snapping to a cabinet already standing at the extreme edge.
+  const hysteresis=.18;
+  if(current && current.dist<=nearest.dist+hysteresis) return current.id;
+  return nearest.id;
 }
 
 function snapCoord(item,m){
@@ -977,6 +1182,7 @@ function refreshSelectionBox(){
 
 function updateSidebar(){
   const count=state.items.length,total=state.items.reduce((s,i)=>s+getModule(i.moduleId).price,0);
+  syncCountertopUI();
   document.getElementById('module-count').textContent=count;
   document.getElementById('total-price').textContent=fmt.format(total)+' ₽';
 
@@ -1088,31 +1294,205 @@ function clearGroup(g){
 }
 
 
+function openMaterialModal(type){
+  if(type==='facade' && !findItem(state.selectedId)){
+    showToast('Сначала выберите модуль','Нажмите на модуль в 3D, затем выберите фасад.');
+    return;
+  }
+  materialModalType=type;
+  materialModalCategory='all';
+  materialModalSearch='';
+  const search=document.getElementById('material-search'); if(search) search.value='';
+  const modal=document.getElementById('material-modal');
+  modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('material-modal-open');
+  renderMaterialModal();
+  setTimeout(()=>search?.focus(),50);
+}
+function closeMaterialModal(){
+  const modal=document.getElementById('material-modal');
+  modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true');
+  document.body.classList.remove('material-modal-open');
+  materialModalType=null;
+}
+function materialCategoryDefs(type){
+  return type==='facade'
+    ? [
+        ['all','Все'],['wood','Древесные'],['fantasy','Фентезийные'],['solid','Фоновые']
+      ]
+    : [
+        ['all','Все'],['light','Светлые'],['stone','Камень и мрамор'],['wood','Дерево'],['industrial','Бетон и индустриальные'],['dark','Тёмные'],['color','Цветные']
+      ];
+}
+function materialMatchesSearch(m,q){
+  if(!q) return true;
+  return `${m.code||''} ${m.name||''} ${m.supplier||''}`.toLowerCase().includes(q);
+}
+function renderMaterialModal(){
+  if(!materialModalType) return;
+  const isTop=materialModalType==='countertop';
+  const title=document.getElementById('material-modal-title');
+  const sub=document.getElementById('material-modal-subtitle');
+  title.textContent=isTop?'Выберите столешницу':'Выберите фасад';
+  sub.textContent=isTop?'СКИФ · декоры, доступные в выбранной толщине':'Томлесдрев · ЛДСП';
+
+  const thicknessWrap=document.getElementById('material-modal-thickness');
+  const thicknessChips=document.getElementById('material-thickness-chips');
+  thicknessWrap.classList.toggle('hidden',!isTop);
+  if(isTop){
+    thicknessChips.innerHTML=[6,16,25,38,60].map(t=>`<button type="button" class="material-filter-chip${state.countertopThickness===t?' active':''}" data-thickness="${t}">${t} мм</button>`).join('');
+    thicknessChips.querySelectorAll('[data-thickness]').forEach(btn=>{
+      btn.onclick=()=>{
+        state.countertopThickness=+btn.dataset.thickness;
+        document.getElementById('countertop-thickness').value=String(state.countertopThickness);
+        const compatible=COUNTERTOP_MATERIALS.filter(m=>(m.thicknesses||[38]).includes(state.countertopThickness));
+        if(!compatible.some(m=>m.id===state.countertopMaterialId) && compatible.length){
+          state.countertopMaterialId=compatible[0].id;
+          document.getElementById('countertop-select').value=state.countertopMaterialId;
+          syncCountertopUI(); rebuildModules(); saveLocal();
+        }
+        renderCountertopOptions(false);
+        renderMaterialModal();
+      };
+    });
+  }
+
+  const categories=materialCategoryDefs(materialModalType);
+  const catWrap=document.getElementById('material-category-chips');
+  catWrap.innerHTML=categories.map(([id,label])=>`<button type="button" class="material-filter-chip${materialModalCategory===id?' active':''}" data-material-category="${id}">${label}</button>`).join('');
+  catWrap.querySelectorAll('[data-material-category]').forEach(btn=>{
+    btn.onclick=()=>{materialModalCategory=btn.dataset.materialCategory;renderMaterialModal();};
+  });
+
+  let list=(isTop?COUNTERTOP_MATERIALS:FACADE_MATERIALS).filter(m=>{
+    if(isTop && !(m.thicknesses||[38]).includes(state.countertopThickness)) return false;
+    if(materialModalCategory!=='all' && m.category!==materialModalCategory) return false;
+    return materialMatchesSearch(m,materialModalSearch);
+  });
+
+  const currentId=isTop?state.countertopMaterialId:(findItem(state.selectedId)?.materialId||state.materialId);
+  const count=document.getElementById('material-modal-count');
+  count.textContent=`Найдено: ${list.length}`;
+  const grid=document.getElementById('material-modal-grid');
+  if(!list.length){
+    grid.innerHTML='<div class="material-modal-empty">В этой категории нет декоров с выбранными параметрами.</div>';
+    return;
+  }
+  grid.innerHTML=list.map(m=>{
+    const meta=isTop
+      ? `${m.code?'№ '+m.code+' · ':''}${m.supplier}${m.thicknesses?.length?' · '+m.thicknesses.join('/')+' мм':''}`
+      : `${m.supplier} · ЛДСП`;
+    const details=isTop ? [
+      m.collection,
+      m.surface,
+      m.embossing ? `тиснение: ${m.embossing}` : null,
+      m.length ? `${m.length} мм` : null,
+      m.widths?.length ? `ширина ${m.widths.join('/')} мм` : null,
+      m.specDetails || null
+    ].filter(Boolean).join(' · ') : '';
+    const badges=[];
+    if(m.texture) badges.push('<span>Реальная текстура</span>');
+    if(m.isNew) badges.push('<span>Новинка</span>');
+    if(m.exclusive) badges.push('<span>Эксклюзив</span>');
+    if(m.length4200) badges.push('<span>4,2 м</span>');
+    return `<button type="button" class="material-card${m.id===currentId?' active':''}" data-material-id="${m.id}">
+      <i class="material-card-preview"></i>
+      <span class="material-card-info"><b>${isTop && m.code?'№ '+m.code+' — ':''}${m.name}</b><small>${meta}</small>${details?`<small class="material-card-details">${details}</small>`:''}${badges.length?`<em>${badges.join('')}</em>`:''}</span>
+      <span class="material-card-check">✓</span>
+    </button>`;
+  }).join('');
+  grid.querySelectorAll('[data-material-id]').forEach(card=>{
+    const materialId=card.dataset.materialId;
+    const material=(isTop?COUNTERTOP_MATERIALS:FACADE_MATERIALS).find(m=>m.id===materialId);
+    const preview=card.querySelector('.material-card-preview');
+    if(preview && material) preview.style.background=previewCss(material);
+    card.onclick=()=>selectMaterialFromModal(materialId);
+  });
+}
+function selectMaterialFromModal(id){
+  if(materialModalType==='facade'){
+    const item=findItem(state.selectedId); if(!item) return;
+    item.materialId=id; state.materialId=id;
+    document.getElementById('facade-select').value=id;
+    syncSelectedMaterialUI(); rebuildModules(); saveLocal();
+    closeMaterialModal();
+    showToast('Фасад выбран',getFacadeMaterial(id).name);
+    return;
+  }
+  if(materialModalType==='countertop'){
+    const def=getCountertopMaterial(id);
+    if(!(def.thicknesses||[38]).includes(state.countertopThickness)) return;
+    state.countertopMaterialId=id;
+    document.getElementById('countertop-select').value=id;
+    syncCountertopUI(); rebuildModules(); saveLocal();
+    closeMaterialModal();
+    showToast('Столешница выбрана',`${def.code?'№ '+def.code+' — ':''}${def.name}, ${state.countertopThickness} мм`);
+  }
+}
+
 function getFacadeMaterial(materialId){
   return FACADE_MATERIALS.find(m=>m.id===materialId)||FACADE_MATERIALS[0];
 }
+function getCountertopMaterial(materialId){
+  return COUNTERTOP_MATERIALS.find(m=>m.id===materialId)||COUNTERTOP_MATERIALS[0];
+}
+function previewCss(def){
+  const c=def?.color||'#aaa';
+  if(def?.texture) return `url("${def.texture}") center / cover no-repeat, ${c}`;
+  if(def?.type==='wood'||def?.category==='wood') return `linear-gradient(100deg,rgba(255,255,255,.10),rgba(0,0,0,.06)),repeating-linear-gradient(6deg,${c} 0 8px,rgba(60,35,20,.10) 9px 10px,${c} 12px 21px)`;
+  if(['stone','industrial','dark','fantasy'].includes(def?.type)||['stone','industrial','dark','fantasy'].includes(def?.category)) return `radial-gradient(circle at 25% 30%,rgba(255,255,255,.22),transparent 22%),radial-gradient(circle at 70% 60%,rgba(0,0,0,.10),transparent 28%),${c}`;
+  return c;
+}
+function renderFacadeOptions(){
+  const sel=document.getElementById('facade-select'); if(!sel)return;
+  const cat=document.getElementById('facade-category').value;
+  const item=findItem(state.selectedId); const current=item?.materialId || state.materialId;
+  const list=FACADE_MATERIALS.filter(m=>cat==='all'||m.category===cat);
+  sel.innerHTML=list.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  if(list.some(m=>m.id===current))sel.value=current;
+  sel.disabled=!item;
+}
+function renderCountertopOptions(ensureCompatible=false){
+  const sel=document.getElementById('countertop-select'); if(!sel)return;
+  const cat=document.getElementById('countertop-category').value;
+  const t=+document.getElementById('countertop-thickness').value;
+  let list=COUNTERTOP_MATERIALS.filter(m=>(m.thicknesses||[38]).includes(t) && (cat==='all'||m.category===cat));
+  if(!list.length){sel.innerHTML='<option value="">Нет подходящих декоров</option>';sel.disabled=true;return;}
+  sel.disabled=false;
+  if(ensureCompatible && !list.some(m=>m.id===state.countertopMaterialId)) state.countertopMaterialId=list[0].id;
+  sel.innerHTML=list.map(m=>`<option value="${m.id}">${m.code?'№ '+m.code+' — ':''}${m.name}</option>`).join('');
+  if(list.some(m=>m.id===state.countertopMaterialId))sel.value=state.countertopMaterialId; else sel.value=list[0].id;
+  if(!list.some(m=>m.id===state.countertopMaterialId)) state.countertopMaterialId=sel.value;
+  syncCountertopUI();
+}
 function syncSelectedMaterialUI(){
-  const sw=document.getElementById('swatches');
-  if(!sw) return;
   const item=findItem(state.selectedId);
-  const materialId=item?.materialId || null;
-  [...sw.children].forEach((el,i)=>{
-    const isActive=materialId && FACADE_MATERIALS[i].id===materialId;
-    el.classList.toggle('active',!!isActive);
-    el.disabled=!item;
-  });
-  const name=document.getElementById('material-name');
-  if(name) name.textContent=item ? getFacadeMaterial(item.materialId).name : 'Выберите модуль, чтобы изменить цвет фасада';
+  const def=item?getFacadeMaterial(item.materialId):getFacadeMaterial(state.materialId);
+  const name=document.getElementById('material-name');if(name)name.textContent=item?def.name:'Выберите модуль, чтобы изменить фасад';
+  const preview=document.getElementById('facade-preview');if(preview)preview.style.background=previewCss(def);
+  const sel=document.getElementById('facade-select');if(sel){sel.disabled=!item;if(item && [...sel.options].some(o=>o.value===item.materialId))sel.value=item.materialId;}
+  const all=document.getElementById('apply-facade-all');if(all)all.disabled=!item;
+  const open=document.getElementById('facade-open');if(open)open.disabled=!item;
+}
+function syncCountertopUI(){
+  const def=getCountertopMaterial(state.countertopMaterialId);
+  const n=document.getElementById('countertop-name');if(n)n.textContent=`${def.code?'№ '+def.code+' ':''}${def.name}`;
+  const m=document.getElementById('countertop-meta');if(m)m.textContent=`${def.supplier} · ${state.countertopThickness} мм`;
+  const p=document.getElementById('countertop-preview');if(p)p.style.background=previewCss(def);
+  const rn=document.getElementById('project-countertop-name');if(rn)rn.textContent=`${def.code?'№ '+def.code+' ':''}${def.name}`;
+  const rt=document.getElementById('project-countertop-thickness');if(rt)rt.textContent=`${state.countertopThickness} мм`;
 }
 
 function saveLocal(){
-  try{localStorage.setItem('slavnaya-kitchen-mvp',JSON.stringify({room:state.room,materialId:state.materialId,items:state.items,nextId:state.nextId,mode:state.mode,moduleTab:state.moduleTab}));}catch(e){}
+  try{localStorage.setItem('slavnaya-kitchen-mvp',JSON.stringify({room:state.room,materialId:state.materialId,countertopMaterialId:state.countertopMaterialId,countertopThickness:state.countertopThickness,items:state.items,nextId:state.nextId,mode:state.mode,moduleTab:state.moduleTab}));}catch(e){}
 }
 function restoreLocal(){
   try{
     const raw=localStorage.getItem('slavnaya-kitchen-mvp');if(!raw)return;
     const data=JSON.parse(raw);if(data.room)state.room={...state.room,...data.room};
     if(FACADE_MATERIALS.some(m=>m.id===data.materialId))state.materialId=data.materialId;
+    if(COUNTERTOP_MATERIALS.some(m=>m.id===data.countertopMaterialId))state.countertopMaterialId=data.countertopMaterialId;
+    if([6,16,25,38,60].includes(+data.countertopThickness))state.countertopThickness=+data.countertopThickness;
     if(Array.isArray(data.items)){
       state.items=data.items.filter(i=>getModule(i.moduleId)).map(i=>{
         const m=getModule(i.moduleId);
@@ -1122,7 +1502,9 @@ function restoreLocal(){
     }
     state.nextId=data.nextId||1;if(data.mode)state.mode=data.mode;if(data.moduleTab)state.moduleTab=data.moduleTab;
     syncRoomFields();renderModuleTabs();renderCatalog();
-    syncSelectedMaterialUI();
+    document.getElementById('countertop-thickness').value=String(state.countertopThickness);
+    renderFacadeOptions();renderCountertopOptions(true);
+    syncSelectedMaterialUI();syncCountertopUI();
   }catch(e){console.warn('Не удалось восстановить локальный проект',e)}
 }
 

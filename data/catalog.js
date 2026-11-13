@@ -103,9 +103,195 @@ export const CATALOG = [
   }
 ];
 
+// Материалы обновлены по каталогам производителей на 13.11.2026.
+// Визуальные 3D-превью процедурные. Поле texture готово для подключения
+// официальных файлов декоров без изменения логики конструктора.
+const facade = (id, name, category, color, roughness = .68, opts={}) => ({
+  id, name, category, supplier:'Томлесдрев', type:category==='wood'?'wood':category==='fantasy'?'fantasy':'solid',
+  color, roughness, texture:opts.texture || null, sourceUrl:'https://tomlesdrev.ru/products/catalog/'
+});
+
 export const FACADE_MATERIALS = [
-  { id: 'white-matte', name: 'Белый матовый', type: 'solid', color: '#f2f1ed', roughness: 0.72 },
-  { id: 'warm-grey', name: 'Тёплый серый', type: 'solid', color: '#a9a49b', roughness: 0.68 },
-  { id: 'graphite', name: 'Графит', type: 'solid', color: '#3f4142', roughness: 0.62 },
-  { id: 'oak-light', name: 'Светлый дуб · тест фактуры', type: 'wood', color: '#b98c5c', roughness: 0.64 }
+  // Древесные
+  facade('td-acacia','Акация','wood','#dcc9b3',.68,{texture:'./assets/textures/materials/facades/acacia.jpg'}),
+  facade('td-bodega-white','Бодега Белая','wood','#d8c7af'),
+  facade('td-bodega-light','Бодега Светлая','wood','#c8ad86'),
+  facade('td-wenge','Венге','wood','#4b3429'),
+  facade('td-wenge-linum','Венге Линум','wood','#5a4439'),
+  facade('td-wenge-light','Венге Светлый','wood','#8b6d57'),
+  facade('td-oak-arizona','Дуб Аризона','wood','#b48b60'),
+  facade('td-oak-atlanta','Дуб Атланта','wood','#ae8054'),
+  facade('td-oak-bunratty','Дуб Бунратти','wood','#b78a5e'),
+  facade('td-oak-wotan','Дуб Вотан','wood','#a97545'),
+  facade('td-oak-bleached','Дуб Выбеленный','wood','#d4c2a6'),
+  facade('td-oak-intra','Дуб Интра','wood','#a88769'),
+  facade('td-oak-koburg','Дуб Кобург','wood','#936f51'),
+  facade('td-oak-kronberg','Дуб Кронберг','wood','#9b7653'),
+  facade('td-oak-ponente','Дуб Поненте','wood','#c09c72'),
+  facade('td-oak-samdal','Дуб Самдал','wood','#b18b67'),
+  facade('td-oak-sedan','Дуб Седан','wood','#9b795c'),
+  facade('td-oak-sonoma','Дуб Сонома','wood','#c6aa83'),
+  facade('td-oak-thermo-dark','Дуб Термо Тёмный','wood','#574035'),
+  facade('td-canadian-oak','Канадский Дуб','wood','#a77e55'),
+  facade('td-maple-tanzai','Клён Танзай','wood','#cfb893'),
+  facade('td-noche-guarneri','Ноче Гварнери','wood','#8f674e'),
+  facade('td-noche-pegasso','Ноче Пегассо','wood','#7c5a45'),
+  facade('td-oleander','Олеандр','wood','#a98c72'),
+  facade('td-oleander-beige','Олеандр Бежевый','wood','#c4aa8d'),
+  facade('td-alder','Ольха','wood','#b9865f'),
+  facade('td-walnut-donskoy','Орех Донской','wood','#8d6247'),
+  facade('td-walnut-italian','Орех Итальянский','wood','#77523c'),
+  facade('td-walnut-tavolato','Орех Таволато','wood','#80573f'),
+  facade('td-pine-astrid','Сосна Астрид','wood','#c3a377'),
+  facade('td-pine-winterberg','Сосна Винтерберг','wood','#b89d7c'),
+  facade('td-thuja','Туя','wood','#a77b54'),
+  facade('td-ash-anchor-white','Ясень Анкор Белый','wood','#ddd1bc'),
+  facade('td-ash-anchor-light','Ясень Анкор Светлый','wood','#c9ad87'),
+  facade('td-ash-anchor-dark','Ясень Анкор Тёмный','wood','#695245'),
+  facade('td-ash-shimo-light','Ясень Шимо Светлый','wood','#c8ab83'),
+  facade('td-ash-shimo-dark','Ясень Шимо Тёмный','wood','#695042'),
+
+  // Фентезийные
+  facade('td-beton-pine','Бетон Пайн','fantasy','#8e8b84'),
+  facade('td-ena','Ена','fantasy','#9a9188'),
+  facade('td-stone','Камень','fantasy','#8a8883'),
+  facade('td-kena','Кена','fantasy','#a09383'),
+  facade('td-loft','Лофт','fantasy','#77736d'),
+  facade('td-plank','Планка','fantasy','#9b8167'),
+  facade('td-sirius','Сириус','fantasy','#777b7e'),
+  facade('td-tegola','Тегола','fantasy','#8b7667',.68,{texture:'./assets/textures/materials/facades/tegola.jpg'}),
+  facade('td-findus','Финдус','fantasy','#9c8e80'),
+  facade('td-firestone','Файерстоун','fantasy','#66605b'),
+  facade('td-cement','Цемент','fantasy','#94928e'),
+  facade('td-cement-dark','Цемент Тёмный','fantasy','#5f6060'),
+
+  // Фоновые
+  facade('td-aluminum','Алюминий','solid','#b5b8ba'),
+  facade('td-basalt','Базальт','solid','#55585a'),
+  facade('td-white','Белый Белый','solid','#f4f3ef',.72),
+  facade('td-blue-light','Голубой','solid','#a9c6d5'),
+  facade('td-yellow','Жёлтый','solid','#dfbd4b'),
+  facade('td-indigo','Индиго','solid','#45556e'),
+  facade('td-cappuccino','Капучино','solid','#b69b83'),
+  facade('td-red','Красный','solid','#9f3436'),
+  facade('td-cream','Крем','solid','#e6d7b8'),
+  facade('td-lavender','Лаванда','solid','#afa5bb'),
+  facade('td-orange','Оранж','solid','#c86d3d'),
+  facade('td-pink','Розовый','solid','#d9a8ad'),
+  facade('td-rose-quartz','Розовый кварц','solid','#cfaeae'),
+  facade('td-green-light','Салатовый','solid','#a9bf75'),
+  facade('td-grey','Серый','solid','#989b9c'),
+  facade('td-blue','Синий','solid','#536f8b'),
+  facade('td-superwhite','Супербелый','solid','#fafaf7',.72),
+  facade('td-terracotta','Терракота','solid','#a45b48'),
+  facade('td-titan','Титан','solid','#777b7d'),
+  facade('td-taffy','Тэфи','solid','#b49a8d'),
+  facade('td-beige','Бежевый','solid','#c7b49a'),
+  facade('td-atlantic','Фон Атлантик','solid','#667b7d'),
+  facade('td-muscat','Фон Мускат','solid','#9d7967'),
+  facade('td-forest','Форест','solid','#596b5e'),
+  facade('td-black','Чёрный','solid','#252628',.58),
+  facade('td-sage','Шалфей','solid','#849081'),
+  facade('td-cashmere','Кашемир','solid','#b5a99b')
 ];
+
+const countertop = (id, code, name, category, color, opts={}) => ({
+  id, code, name, category, supplier:'СКИФ', type:category, color, roughness:opts.roughness ?? .52,
+  texture:opts.texture || null, length4200:!!opts.length4200, exclusive:!!opts.exclusive, isNew:!!opts.isNew,
+  collection:opts.collection || null, surface:opts.surface || null, embossing:opts.embossing || null,
+  length:opts.length || null, widths:opts.widths || null, specDetails:opts.specDetails || null,
+  // Толщины именно столешниц, а не мебельного щита/HPL compact.
+  // Базовый ряд СКИФ: 16 / 25 / 38 / 60 мм; для декоров-исключений набор переопределён ниже.
+  thicknesses: opts.thicknesses || [16,25,38,60],
+  sourceUrl:'https://skifltd.com/produkcziya/stoleshniczyi/dekoryi'
+});
+
+export const COUNTERTOP_MATERIALS = [
+  // Светлые / белые
+  countertop('skif-10','10','Белый','light','#eeeDEA',{length4200:true}),
+  countertop('skif-259','259','Белый Тунис','light','#e6e0d7',{exclusive:true,thicknesses:[16,25,38]}),
+  countertop('skif-76','76','Белый Каспий','light','#e9e8e2',{length4200:true,exclusive:true}),
+  countertop('skif-249g','249Г','Калаката','stone','#e8e5dd',{length4200:true,exclusive:true,isNew:true,thicknesses:[16,25,38,60],texture:'https://skifltd.com/uploads/images/decors/1227/webp_inpage/249.webp'}),
+  countertop('skif-327','327','Гранит белый','stone','#d8d7d2',{length4200:true}),
+  countertop('skif-60','60','Мрамор Итальянский','stone','#dedbd4',{length4200:true,thicknesses:[16,25,38]}),
+  countertop('skif-113','113','Мрамор золотой','stone','#e2d9c6',{length4200:true,exclusive:true,isNew:true,roughness:.50,thicknesses:[6,16,25,38,60],texture:'./assets/textures/materials/countertops/113-gold-marble.jpg',texturePhysicalHeight:1.08,textureOffset:[0.08,0.05],surface:'Матовый / глянцевый',embossing:'Кристалл',specDetails:'3000 мм: матовый/глянцевый · 6/16/25/38/60 мм · ширина 600/800/900/1200 мм; 4200 мм: матовый · 6/38 мм · ширина 600/800 мм'}),
+  countertop('skif-296l','296Л','Полярная звезда','light','#e1e1dc',{length4200:true,thicknesses:[16,25,38]}),
+  countertop('skif-38','38','Белый перламутр','light','#e7e4de'),
+  countertop('skif-35g','35Г','Мрамор Саламанка','stone','#d9d5cf',{length4200:true}),
+  countertop('skif-246sn','246SN','Венето светлый','stone','#d8d0c6',{length4200:true,exclusive:true,isNew:true}),
+  countertop('skif-208','208','Мрамор калакатта золотой','stone','#e6ded0',{length4200:true,isNew:true}),
+  countertop('skif-43','43','Аргус светлый','stone','#d2c6b6',{length4200:true,exclusive:true}),
+  countertop('skif-263','263','Паладина белая','light','#e2e0db',{length4200:true,isNew:true}),
+  countertop('skif-74','74','Слоновая кость','light','#dfd0b4',{length4200:true}),
+  countertop('skif-130','130','Сахара белая','light','#d7d2c7',{length4200:true}),
+
+  // Камень / мрамор / оникс / травертин
+  countertop('skif-200','200','Луанда','stone','#b7afa5',{exclusive:true,isNew:true,thicknesses:[16,25,38]}),
+  countertop('skif-240slu','240SLU','Мираджо','stone','#b8b0a6',{length4200:true,exclusive:true,isNew:true}),
+  countertop('skif-187','187','Венеция','stone','#b8afa4',{length4200:true,isNew:true}),
+  countertop('skif-206','206','Мрамор империал','stone','#c9c0b6',{exclusive:true,isNew:true}),
+  countertop('skif-53','53','Оникс голубой','stone','#9fabb0',{length4200:true,isNew:true}),
+  countertop('skif-14','14','Каррара, серый мрамор','stone','#b9b8b5'),
+  countertop('skif-31','31','Мрамор Аргентина','stone','#a8a3a0'),
+  countertop('skif-65','65','Мрамор Рускеала','stone','#777978',{exclusive:true,isNew:true}),
+  countertop('skif-86','86','Оникс Дымчатый','stone','#817a75',{length4200:true,exclusive:true,isNew:true}),
+  countertop('skif-59','59','Травертин серый','stone','#a8a096'),
+  countertop('skif-122','122','Оникс Азул','stone','#74828b',{length4200:true,exclusive:true,isNew:true}),
+  countertop('skif-227l','227Л','Мрамор Летиция','stone','#aaa39d',{length4200:true,exclusive:true,isNew:true}),
+  countertop('skif-210','210','Мрамор Фиор','stone','#a69b93',{exclusive:true,isNew:true}),
+  countertop('skif-104','104','Травертин Феллини','stone','#9b8c7a'),
+  countertop('skif-212kn','212КН','Мрамор Пиетра Грей','stone','#777574',{isNew:true,thicknesses:[16,25,38,60],texture:'https://skifltd.com/uploads/images/decors/517/webp_inpage/212-1.webp'}),
+  countertop('skif-215','215','Мрамор Лавант','stone','#676565',{isNew:true}),
+  countertop('skif-207','207','Мрамор империал тёмный','dark','#5b5450',{exclusive:true,isNew:true}),
+  countertop('skif-20','20','Марквина','dark','#353536',{length4200:true}),
+  countertop('skif-211','211','Мрамор Фиор тёмный','dark','#4d4846',{exclusive:true,isNew:true}),
+
+  // Дерево
+  countertop('skif-101','101','Бискайская сосна','wood','#a88766',{length4200:true}),
+  countertop('skif-80','80','Дуб дымчатый','wood','#796759',{exclusive:true,isNew:true}),
+  countertop('skif-328','328','Дуб Парма','wood','#aa8765',{length4200:true,exclusive:true,thicknesses:[16,25,38,60],texture:'https://skifltd.com/images/catalog/main/328.jpg'}),
+  countertop('skif-108','108','Сосна Осло','wood','#b69a78',{exclusive:true}),
+  countertop('skif-112','112','Дуб светлый','wood','#bda17d',{exclusive:true}),
+  countertop('skif-121','121','Дуб Флагстаф светлый','wood','#ad8c68',{exclusive:true}),
+  countertop('skif-114','114','Дуб рифлёный','wood','#9d7a5a',{exclusive:true,isNew:true}),
+  countertop('skif-323p','323П','Канадский дуб','wood','#9d7855',{length4200:true}),
+  countertop('skif-30p','30П','Дуб Ниагара','wood','#977257',{length4200:true}),
+  countertop('skif-264f','264Ф','Орех Стамбул','wood','#755643',{length4200:true,isNew:true,thicknesses:[16,25,38,60],texture:'https://skifltd.com/images/catalog/main/264.jpg'}),
+  countertop('skif-199','199','Дуб Норманд','wood','#99755b',{exclusive:true,isNew:true}),
+  countertop('skif-202','202','Дуб Флагстаф слэб','wood','#836246',{exclusive:true,isNew:true}),
+  countertop('skif-205','205','Дуб Кера','wood','#8b684b'),
+  countertop('skif-87f','87Ф','Дуб Флагстаф','wood','#8b684c',{length4200:true,thicknesses:[16,25,38]}),
+  countertop('skif-100sh','100Ш','Дуб Бунратти','wood','#9c7553',{length4200:true}),
+  countertop('skif-146','146','Вяз','wood','#9b7356',{length4200:true}),
+  countertop('skif-111r','111Р','Дуб Вотан','wood','#966944',{length4200:true,thicknesses:[16,25,38,60],texture:'https://skifltd.com/images/catalog/main/111.jpg'}),
+  countertop('skif-82','82','Старый дуб','wood','#70523f'),
+  countertop('skif-98','98','Золотистый дуб','wood','#a87a45',{length4200:true}),
+  countertop('skif-95r','95Р','Орех Пекан','wood','#775344',{length4200:true}),
+  countertop('skif-294','294','Обожжённый дуб','wood','#55453d',{length4200:true}),
+
+  // Бетон / индустриальные / фантазийные
+  countertop('skif-124','124','Сосна бетон','industrial','#8c8580',{exclusive:true}),
+  countertop('skif-238','238','Слэйт','industrial','#777777',{isNew:true}),
+  countertop('skif-224','224','Детройт','industrial','#817b74',{exclusive:true,isNew:true}),
+  countertop('skif-70bt','70БТ','Бетон','industrial','#818181',{length4200:true,thicknesses:[16,25,38,60],texture:'https://skifltd.com/uploads/images/decors/244/webp_inpage/70.webp'}),
+  countertop('skif-42a','42А','Алюминий','industrial','#a2a4a4'),
+  countertop('skif-222','222','Текстон','industrial','#77746f',{isNew:true}),
+  countertop('skif-216t','216Т','Вулканический песок','industrial','#6d6862',{isNew:true}),
+  countertop('skif-239','239','Титаниум','industrial','#606467',{isNew:true}),
+  countertop('skif-209slu','209SLU','Скала','industrial','#676664',{length4200:true,exclusive:true,isNew:true}),
+
+  // Тёмные / цветные
+  countertop('skif-92','92','Оникс тёмный графит','dark','#47484a',{exclusive:true}),
+  countertop('skif-117','117','Витрум графит','dark','#505155',{length4200:true,exclusive:true,isNew:true}),
+  countertop('skif-46t','46Т','Кастилло тёмный','dark','#4b4641',{length4200:true,thicknesses:[16,25,38,60],texture:'https://skifltd.com/uploads/images/decors/331/webp_inpage/46.webp'}),
+  countertop('skif-300','300','Эклипс','dark','#4b4a4a'),
+  countertop('skif-1','1','Венге','dark','#48352f'),
+  countertop('skif-260','260','Сахара чёрная','dark','#363535',{length4200:true}),
+  countertop('skif-295','295','Чёрный Тунис','dark','#2c2d2d',{length4200:true}),
+  countertop('skif-276kn','276КН','Чёрный камень','dark','#191919',{isNew:true,roughness:.68,thicknesses:[6,38],texture:'./assets/textures/materials/countertops/276kn-black-stone.jpg',collection:'Эталон Плюс',surface:'Матовый',embossing:'Камень',length:3000,widths:[600,800,900,1200]}),
+  countertop('skif-44','44','Аргус тёмный','dark','#49423e',{length4200:true}),
+  countertop('skif-26','26','Гранит чёрный','dark','#343536',{length4200:true}),
+  countertop('skif-3027sl','3027SL','Зелёный лес','color','#41584b',{thicknesses:[16],texture:'https://skifltd.com/uploads/images/decors/488/webp_inpage/3027plp.webp'}),
+  countertop('skif-257','257','Фаерстоун синий','color','#405463',{length4200:true,isNew:true})
+];
+
