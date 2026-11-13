@@ -21,7 +21,7 @@
       <div class="brand-mark"><img src="./assets/brand/logo-white.png" alt="Логотип Славная мебель"></div>
       <div>
         <strong>СЛАВНАЯ МЕБЕЛЬ</strong>
-        <span>Конструктор модульной кухни · MVP 1.3</span>
+        <span>Конструктор модульной кухни · MVP 1.3.6 · визуальный каталог декоров · прокрутка карточек</span>
       </div>
     </div>
     <div class="top-actions">
@@ -74,16 +74,51 @@
         <div id="module-tabs" class="module-tabs"></div>
         <div id="catalog" class="catalog"></div>
 
+        <div class="section project-materials-section">
+          <div class="section-title">Столешница</div>
+          <div class="material-setting material-setting-project">
+            <button id="countertop-open" class="material-current-card" type="button">
+              <i id="countertop-preview" class="material-preview material-preview-wide"></i>
+              <span class="material-preview-text">
+                <b id="countertop-name">Столешница</b>
+                <small id="countertop-meta">СКИФ · 38 мм</small>
+              </span>
+              <span class="material-change-label">Изменить</span>
+            </button>
+            <small>Выберите толщину и декор во всплывающем каталоге. В 3D визуальная толщина столешницы не меняется.</small>
+            <div class="material-legacy-controls" aria-hidden="true">
+              <select id="countertop-thickness">
+                <option value="6">6 мм</option><option value="16">16 мм</option><option value="25">25 мм</option><option value="38" selected>38 мм</option><option value="60">60 мм</option>
+              </select>
+              <select id="countertop-category">
+                <option value="all">Все декоры</option><option value="light">Светлые</option><option value="stone">Камень и мрамор</option><option value="wood">Дерево</option><option value="industrial">Бетон и индустриальные</option><option value="dark">Тёмные</option><option value="color">Цветные</option>
+              </select>
+              <select id="countertop-select"></select>
+            </div>
+          </div>
+        </div>
+
         <div class="section">
           <div class="section-title">Настройки выбранного модуля</div>
           <div id="module-settings-empty" class="empty-state">Выберите модуль в 3D, чтобы изменить доступные параметры.</div>
           <div id="module-settings" class="module-settings hidden">
             <div class="module-settings-name" id="module-settings-name"></div>
-            <div class="module-color-setting">
-              <label>Цвет фасада</label>
-              <div id="swatches" class="swatches"></div>
-              <div id="material-name" class="material-name"></div>
-              <small>Новый модуль получает цвет последнего добавленного модуля.</small>
+            <div class="module-color-setting material-setting">
+              <label>Фасад выбранного модуля</label>
+              <button id="facade-open" class="material-current-card" type="button">
+                <i id="facade-preview" class="material-preview"></i>
+                <span class="material-preview-text">
+                  <b id="material-name">Фасад</b>
+                  <small>Томлесдрев · ЛДСП</small>
+                </span>
+                <span class="material-change-label">Изменить</span>
+              </button>
+              <div class="material-legacy-controls" aria-hidden="true">
+                <select id="facade-category"><option value="all">Все фасады</option><option value="wood">Древесные</option><option value="fantasy">Фентезийные</option><option value="solid">Фоновые</option></select>
+                <select id="facade-select"></select>
+              </div>
+              <button id="apply-facade-all" class="btn btn-ghost btn-full material-apply-all" type="button">Применить фасад ко всей кухне</button>
+              <small>Новый модуль наследует фасад последнего добавленного модуля.</small>
             </div>
             <div id="module-height-setting" class="selection-height hidden">
               <label for="selection-height">Низ модуля от пола, мм</label>
@@ -196,6 +231,12 @@
           </div>
         </div>
 
+        <div class="section project-material-summary">
+          <div class="section-title">Материалы</div>
+          <div class="selection-row"><span>Столешница</span><b id="project-countertop-name">—</b></div>
+          <div class="selection-row"><span>Толщина</span><b id="project-countertop-thickness">38 мм</b></div>
+        </div>
+
         <div class="section spec-section">
           <div class="section-title">Смета</div>
           <div id="spec" class="spec"><div class="empty-state">Смета пока пуста.</div></div>
@@ -209,6 +250,33 @@
       </div>
     </aside>
   </main>
+
+
+  <div id="material-modal" class="material-modal hidden" aria-hidden="true">
+    <div class="material-modal-backdrop" data-material-close="1"></div>
+    <div class="material-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="material-modal-title">
+      <div class="material-modal-head">
+        <div>
+          <b id="material-modal-title">Выберите материал</b>
+          <span id="material-modal-subtitle">Каталог доступных декоров</span>
+        </div>
+        <button id="material-modal-close" class="material-modal-close" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <div id="material-modal-thickness" class="material-modal-thickness hidden">
+        <span>Толщина столешницы</span>
+        <div id="material-thickness-chips" class="material-filter-chips"></div>
+      </div>
+      <div class="material-modal-tools">
+        <div id="material-category-chips" class="material-filter-chips material-category-chips"></div>
+        <label class="material-search-wrap">
+          <span>Поиск</span>
+          <input id="material-search" type="search" placeholder="Название или номер декора">
+        </label>
+      </div>
+      <div id="material-modal-count" class="material-modal-count"></div>
+      <div id="material-modal-grid" class="material-modal-grid"></div>
+    </div>
+  </div>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite">
     <div>
