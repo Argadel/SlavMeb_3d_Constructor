@@ -1,0 +1,184 @@
+{
+  "modules": [
+    {
+      "id": "1.1.1",
+      "sku": "НМ1Д_300",
+      "name": "Нижний модуль, 1 дверь",
+      "category": "lower",
+      "width": 300,
+      "depth": 500,
+      "height": 820,
+      "price": 2200
+    },
+    {
+      "id": "1.1.2",
+      "sku": "НМ1Д_400",
+      "name": "Нижний модуль, 1 дверь",
+      "category": "lower",
+      "width": 400,
+      "depth": 500,
+      "height": 820,
+      "price": 2420
+    },
+    {
+      "id": "1.1.3",
+      "sku": "НМ1Д_500",
+      "name": "Нижний модуль, 1 дверь",
+      "category": "lower",
+      "width": 500,
+      "depth": 500,
+      "height": 820,
+      "price": 2640
+    },
+    {
+      "id": "1.1.4",
+      "sku": "НМ1Д_600",
+      "name": "Нижний модуль, 1 дверь",
+      "category": "lower",
+      "width": 600,
+      "depth": 500,
+      "height": 820,
+      "price": 2860
+    },
+    {
+      "id": "2.1.9",
+      "sku": "ВМ2Д_600",
+      "name": "Верхний модуль, 2 двери",
+      "category": "upper720",
+      "width": 600,
+      "depth": 300,
+      "height": 720,
+      "price": 2750
+    },
+    {
+      "id": "2.1.10",
+      "sku": "ВМ2Д_700",
+      "name": "Верхний модуль, 2 двери",
+      "category": "upper720",
+      "width": 700,
+      "depth": 300,
+      "height": 720,
+      "price": 2970
+    },
+    {
+      "id": "2.1.11",
+      "sku": "ВМ2Д_800",
+      "name": "Верхний модуль, 2 двери",
+      "category": "upper720",
+      "width": 800,
+      "depth": 300,
+      "height": 720,
+      "price": 3190
+    },
+    {
+      "id": "2.3.5",
+      "sku": "9ВМ2Д_600",
+      "name": "Верхний модуль 900, 2 двери",
+      "category": "upper900",
+      "width": 600,
+      "depth": 300,
+      "height": 900,
+      "price": 3190
+    },
+    {
+      "id": "2.3.6",
+      "sku": "9ВМ2Д_700",
+      "name": "Верхний модуль 900, 2 двери",
+      "category": "upper900",
+      "width": 700,
+      "depth": 300,
+      "height": 900,
+      "price": 3520
+    },
+    {
+      "id": "2.3.7",
+      "sku": "9ВМ2Д_800",
+      "name": "Верхний модуль 900, 2 двери",
+      "category": "upper900",
+      "width": 800,
+      "depth": 300,
+      "height": 900,
+      "price": 3800
+    },
+    {
+      "id": "2.7.1",
+      "sku": "ВМА1_300",
+      "name": "Антресоль, 1 дверь",
+      "category": "antresol",
+      "width": 300,
+      "depth": 300,
+      "height": 360,
+      "price": 1150
+    },
+    {
+      "id": "2.7.2",
+      "sku": "ВМА1_400",
+      "name": "Антресоль, 1 дверь",
+      "category": "antresol",
+      "width": 400,
+      "depth": 300,
+      "height": 360,
+      "price": 1300
+    },
+    {
+      "id": "2.7.3",
+      "sku": "ВМА1_500",
+      "name": "Антресоль, 1 дверь",
+      "category": "antresol",
+      "width": 500,
+      "depth": 300,
+      "height": 360,
+      "price": 1540
+    },
+    {
+      "id": "2.7.4",
+      "sku": "ВМА1_600",
+      "name": "Антресоль, 1 дверь",
+      "category": "antresol",
+      "width": 600,
+      "depth": 300,
+      "height": 360,
+      "price": 1650
+    },
+    {
+      "id": "3.1.1",
+      "sku": "ПД_2Д_2158",
+      "name": "Пенал под духовой шкаф, 2 двери",
+      "category": "pantry",
+      "width": 600,
+      "depth": 550,
+      "height": 2158,
+      "price": 6820
+    },
+    {
+      "id": "3.2.1",
+      "sku": "ПД_2Д_2338",
+      "name": "Пенал под духовой шкаф, 2 двери",
+      "category": "pantry",
+      "width": 600,
+      "depth": 550,
+      "height": 2338,
+      "price": 7940
+    },
+    {
+      "id": "3.3.1",
+      "sku": "ПД_2Д_2518",
+      "name": "Пенал под духовой шкаф, 2 двери",
+      "category": "pantry",
+      "width": 600,
+      "depth": 550,
+      "height": 2518,
+      "price": 7550
+    }
+  ],
+  "worktops": [
+    {
+      "length": 1000,
+      "price": 3000
+    },
+    {
+      "length": 1500,
+      "price": 4500
+    }
+  ]
+}

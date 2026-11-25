@@ -1,5 +1,5 @@
 @echo off
-cd /d %~dp0
-start http://localhost:8080
-py -m http.server 8080
+cd /d "%~dp0"
+py -3 server.py
+if errorlevel 1 echo If Python launcher is unavailable, run python server.py in this folder.
 pause
